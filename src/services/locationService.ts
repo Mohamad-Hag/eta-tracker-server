@@ -37,6 +37,7 @@ export const updateLocation = async (
 
     const updatedJoiner = {
       eta: eta.duration,
+      location,
       status,
     };
 
