@@ -85,6 +85,7 @@ export const joinEvent = async (
 };
 
 export const leaveEvent = async (eventId: string, guestId: string) => {
+  // Delete the joiner entry
   const { data, error } = await supabase
     .from("event_joiners")
     .delete()
@@ -94,6 +95,7 @@ export const leaveEvent = async (eventId: string, guestId: string) => {
     .single();
   if (error) throw new Error(error.message);
 
+  // Fetch the guest info (for emitting)
   const { data: leftGuest, error: leftGuestError } = await supabase
     .from("guests")
     .select("*")
@@ -101,10 +103,29 @@ export const leaveEvent = async (eventId: string, guestId: string) => {
     .single();
   if (leftGuestError) throw new Error(leftGuestError.message);
 
+  // Emit the userLeft event
   SocketManager.emitToRoom(`event-${eventId}`, "userLeft", {
     guest: leftGuest,
   });
   console.log("[Current Rooms]", SocketManager.getIO().sockets.adapter.sids);
+
+  // ✅ Check if any joiners are still in the event
+  const { data: remainingJoiners, error: remainingError } = await supabase
+    .from("event_joiners")
+    .select("id")
+    .eq("event_id", eventId);
+
+  if (remainingError) throw new Error(remainingError.message);
+
+  if (remainingJoiners.length === 0) {
+    // No one left, delete the event
+    const { error: deleteEventError } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", eventId);
+    if (deleteEventError) throw new Error(deleteEventError.message);
+    console.log(`Event ${eventId} deleted because no joiners remain.`);
+  }
 
   return data;
 };
