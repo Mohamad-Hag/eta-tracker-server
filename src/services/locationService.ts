@@ -1,5 +1,5 @@
 import { calculateETA } from "../utils/calculateETA";
-import checkIfLate from "../utils/checkIfLate";
+import checkTimingStatus from "../utils/checkTimingStatus";
 import { parseLocationString } from "../utils/parseLocationString";
 import SocketManager from "../utils/SocketManager";
 import supabase from "../utils/supabaseClient";
@@ -14,6 +14,7 @@ export const updateLocation = async (
   try {
     const loc = parseLocationString(location);
     console.log("Location updated from client:", loc);
+
     const event = await getEvent(eventId);
     if (!event) throw new Error("Event not found");
 
@@ -25,15 +26,17 @@ export const updateLocation = async (
       return;
     }
 
-    const { isLate, lateAmount } = checkIfLate(eta.duration, event.event_date);
-    const status =
-      eta.duration === 0
-        ? "Arrived"
-        : isLate
-        ? lateAmount > 15
-          ? "Very Late"
-          : "Late"
-        : "On Time";
+    const { isLate, lateAmount, isEarly, earlyAmount } = checkTimingStatus(
+      eta.duration,
+      event.event_date,
+      5 // Early threshold in minutes
+    );
+
+    // ✅ New status logic
+    let status = "On Time";
+    if (eta.duration === 0) status = "Arrived";
+    else if (isLate) status = lateAmount > 15 ? "Very Late" : "Late";
+    else if (isEarly) status = earlyAmount > 900 ? "Very Early" : "Early"; // 15 min
 
     const updatedJoiner = {
       eta: eta.duration,
@@ -47,9 +50,8 @@ export const updateLocation = async (
       .select("*")
       .eq("event_id", eventId)
       .eq("guest_id", guestId);
-    const joiner =
-      currentJoiner && currentJoiner.length > 0 ? currentJoiner[0] : null;
 
+    const joiner = currentJoiner?.[0];
     if (!joiner)
       throw new Error(`The guest ${guestId} is not in the event ${eventId}`);
 
@@ -58,7 +60,7 @@ export const updateLocation = async (
       throw new Error("Failed to fetch joiner data");
     }
 
-    // ✅ Update only if changes exist
+    // ✅ Avoid unnecessary update
     if (
       joiner?.eta === eta.duration &&
       joiner?.location === location &&
@@ -79,13 +81,20 @@ export const updateLocation = async (
       throw new Error("Failed to update joiner data");
     }
 
-    // ✅ Emit event update to WebSocket clients
-    const eventRoom = `event-${eventId}`;
-    SocketManager.emitToRoom(eventRoom, "etaUpdated", {
+    // ✅ Emit to WebSocket clients with full info
+    SocketManager.emitToRoom(`event-${eventId}`, "etaUpdated", {
       guestId,
       location,
       eta: eta.duration,
       status,
+      late: {
+        isLate,
+        amount: lateAmount,
+      },
+      early: {
+        isEarly,
+        amount: earlyAmount,
+      },
     });
 
     console.log(`ETA updated for guest ${guestId} in event ${eventId}`);
