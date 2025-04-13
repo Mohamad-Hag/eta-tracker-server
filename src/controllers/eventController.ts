@@ -8,13 +8,15 @@ import {
 
 export const createEventController = async (req: any, res: any) => {
   try {
-    const { name, event_date, location, guest_id, guest_name } = req.body;
+    const { name, event_date, location, guest_id, guest_name, guest_avatar } =
+      req.body;
     if (!guest_id)
       return res.status(400).json({ error: "Guest ID is required" });
     const newEvent = await createEvent(
       name,
       event_date,
       location,
+      guest_avatar,
       guest_id,
       guest_name
     );

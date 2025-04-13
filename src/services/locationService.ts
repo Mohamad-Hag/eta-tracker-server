@@ -35,8 +35,8 @@ export const updateLocation = async (
     // ✅ New status logic
     let status = "On Time";
     if (eta.duration === 0) status = "Arrived";
-    else if (isLate) status = lateAmount > 15 ? "Very Late" : "Late";
-    else if (isEarly) status = earlyAmount > 900 ? "Very Early" : "Early"; // 15 min
+    else if (isLate) status = lateAmount > 15 ? "Too Late" : "Late";
+    else if (isEarly) status = earlyAmount > 900 ? "Too Early" : "Early"; // 15 min
 
     const updatedJoiner = {
       eta: eta.duration,

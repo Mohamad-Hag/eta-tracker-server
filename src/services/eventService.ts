@@ -6,11 +6,12 @@ export const createEvent = async (
   name: string,
   eventDate: string,
   location: string,
+  guestAvatar: string,
   guestId: string,
   guestName: string
 ) => {
   // Create guest if not already exists
-  await createGuest(guestId, guestName);
+  await createGuest(guestId, guestName, guestAvatar);
   // Check if guest is already in an event
   const isGuestEvent = await isGuestInEvent(guestId);
   if (isGuestEvent)
