@@ -1,3 +1,4 @@
+import onlineJoinersManager from "../utils/OnlineJoinersManager";
 import SocketManager from "../utils/SocketManager";
 import supabase from "../utils/supabaseClient";
 import { createGuest } from "./guestService";
@@ -38,16 +39,20 @@ export const getEventJoiners = async (eventId: string) => {
     .eq("event_id", eventId);
 
   if (error) throw new Error(error.message);
+
   for await (const joiner of data) {
-    const { data: guest, error: guestError } = await supabase
+    let { data: guest, error: guestError } = await supabase
       .from("guests")
       .select("*")
       .eq("id", joiner.guest_id)
       .single();
 
     if (guestError) throw new Error(guestError.message);
-
     joiner.guest = guest;
+    joiner.connected = onlineJoinersManager.isJoinerOnline(
+      eventId,
+      joiner.guest_id
+    );
   }
 
   return data;
@@ -82,7 +87,38 @@ export const joinEvent = async (
   });
   console.log(`Socket ${socketId} joined event ${eventId}`);
 
+  // Add guest to online joiners
+  onlineJoinersManager.addJoiner(eventId, guestId);
+  console.log(
+    `Guest ${guestId} added to online joiners in the event ${eventId}`
+  );
+
   return { guestId, eventId };
+};
+
+export const leaveEventMany = async (eventId: string, guestIds: string[]) => {
+  const { error } = await supabase
+    .from("event_joiner")
+    .delete()
+    .in("guest_id", guestIds)
+    .eq("event_id", eventId);
+
+  if (error) {
+    console.error("Failed to remove joiners from event:", error.message);
+    throw error;
+  }
+
+  console.log(
+    `Successfully removed ${guestIds.length} joiners from event ${eventId}`
+  );
+
+  // Emit the userLeft event
+  SocketManager.emitToRoom(`event-${eventId}`, "usersLeft", {
+    guestIds,
+  });
+  console.log(`Joiners ${guestIds} left event ${eventId}`);
+
+  await removeEventIfNoJoiners(eventId);
 };
 
 export const leaveEvent = async (eventId: string, guestId: string) => {
@@ -110,6 +146,14 @@ export const leaveEvent = async (eventId: string, guestId: string) => {
   });
   console.log("[Current Rooms]", SocketManager.getIO().sockets.adapter.sids);
 
+  onlineJoinersManager.removeJoiner(eventId, guestId);
+
+  await removeEventIfNoJoiners(eventId);
+
+  return data;
+};
+
+const removeEventIfNoJoiners = async (eventId: string) => {
   // ✅ Check if any joiners are still in the event
   const { data: remainingJoiners, error: remainingError } = await supabase
     .from("event_joiners")
@@ -126,9 +170,8 @@ export const leaveEvent = async (eventId: string, guestId: string) => {
       .eq("id", eventId);
     if (deleteEventError) throw new Error(deleteEventError.message);
     console.log(`Event ${eventId} deleted because no joiners remain.`);
+    onlineJoinersManager.removeAllJoinersFromEvent(eventId);
   }
-
-  return data;
 };
 
 export const getEvent = async (eventId: string) => {

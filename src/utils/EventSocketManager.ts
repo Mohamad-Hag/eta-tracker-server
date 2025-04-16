@@ -10,6 +10,17 @@ class EventSocketManager {
       );
       SocketManager.emitToRoom(`event-${data.eventId}`, "joinerWaved", data);
     });
+
+    socket.on("registerUser", (data) => {
+      const eventId = data.eventId;
+      const guest = data.guest;
+      const guestId = guest.id;
+      if (!guest || !eventId) return;
+      console.log(`Joiner with Id ${guestId} registered to event ${eventId}`);
+      socket.data.eventId = eventId;
+      socket.data.guest = guest;
+      socket.join(`event-${eventId}`);
+    });
   }
 }
 

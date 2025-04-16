@@ -4,6 +4,7 @@ import {
   Socket,
   ServerOptions as SocketServerOptions,
 } from "socket.io";
+import onlineJoinersManager from "./OnlineJoinersManager";
 
 const defaultSocketOptions = {
   cors: { origin: "*", methods: ["GET", "POST"] },
@@ -37,10 +38,30 @@ class SocketManager {
 
         socket.on("disconnect", () => {
           console.log(`User disconnected: ${socket.id}`);
+          const { eventId, guest } = socket.data;
+          if (!eventId || !guest) return;
+          onlineJoinersManager.removeJoiner(eventId, guest.id);
+          console.log(
+            `Joiner ${guest.id} removed online list in the event ${eventId}`
+          );
+          SocketManager.emitUserDisconnectedToEvent(eventId, guest, socket);
+          onlineJoinersManager.scheduleRemoveGuest(eventId, guest.id, 30000);
           SocketManager.sockets.delete(socket.id);
         });
       });
     }
+  }
+
+  private static emitUserDisconnectedToEvent(
+    eventId: string,
+    guest: any,
+    socket: Socket
+  ) {
+    socket.to(`event-${eventId}`).emit("userDisconnected", {
+      guest,
+      eventId: eventId,
+    });
+    console.log(`User ${guest.id} disconnected from event ${eventId}`);
   }
 
   // Get the Socket.io instance
