@@ -45,7 +45,11 @@ class SocketManager {
             `Joiner ${guest.id} removed online list in the event ${eventId}`
           );
           SocketManager.emitUserDisconnectedToEvent(eventId, guest, socket);
-          onlineJoinersManager.scheduleRemoveGuest(eventId, guest.id, 30000);
+          onlineJoinersManager.scheduleRemoveGuest(
+            eventId,
+            guest.id,
+            Number(process.env.AUTO_REMOVE_JOINER_TIMEOUT) || 30000
+          );
           SocketManager.sockets.delete(socket.id);
         });
       });
