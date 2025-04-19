@@ -1,3 +1,4 @@
+import TransportMode from "../types/TransportMode";
 import { calculateETA } from "../utils/calculateETA";
 import checkTimingStatus from "../utils/checkTimingStatus";
 import { parseLocationString } from "../utils/parseLocationString";
@@ -9,7 +10,8 @@ export const updateLocation = async (
   guestId: string,
   eventId: string,
   location: string,
-  socketId: string
+  socketId: string,
+  transportMode: TransportMode
 ) => {
   try {
     const loc = parseLocationString(location);
@@ -19,7 +21,7 @@ export const updateLocation = async (
     if (!event) throw new Error("Event not found");
 
     const eventLocation = parseLocationString(event.location);
-    const eta = await calculateETA(loc, eventLocation);
+    const eta = await calculateETA(loc, eventLocation, transportMode);
 
     if (!eta || !eta.duration) {
       console.error(`Failed to calculate ETA for guest: ${guestId}`);
@@ -42,6 +44,7 @@ export const updateLocation = async (
       eta: eta.duration,
       location,
       status,
+      transport_mode: transportMode,
     };
 
     // ✅ Fetch current status from DB
@@ -86,6 +89,7 @@ export const updateLocation = async (
       guestId,
       location,
       eta: eta.duration,
+      transportMode,
       status,
       late: {
         isLate,

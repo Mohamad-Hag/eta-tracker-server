@@ -1,3 +1,4 @@
+// import TransportMode from "../types/TransportMode";
 // import axios from "axios";
 // import { AppLocation } from "./parseLocationString";
 
@@ -17,7 +18,7 @@
 // export const calculateETA = async (
 //   location: AppLocation,
 //   eventLocation: AppLocation,
-//   transportMode: "car" | "pedestrian" = "car"
+//   transportMode: TransportMode = "car"
 // ): Promise<CalculateETAReturnType> => {
 //   try {
 //     const hereApiKey = process.env.HERE_API_KEY;
@@ -68,6 +69,7 @@
 //     return null;
 //   }
 // };
+import TransportMode from "../types/TransportMode";
 import { AppLocation } from "./parseLocationString";
 
 type CalculateETAReturnType = {
@@ -81,7 +83,7 @@ const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 export const calculateETA = async (
   location: AppLocation,
   eventLocation: AppLocation,
-  transportMode: "car" | "pedestrian" = "car"
+  transportMode: TransportMode = "car"
 ): Promise<CalculateETAReturnType> => {
   console.log("Mock calculateETA called with:");
   console.log("From:", location);
