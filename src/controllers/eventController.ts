@@ -53,6 +53,8 @@ export const getEventController = async (req: any, res: any) => {
   try {
     const { eventId } = req.params;
     const event = await getEvent(eventId);
+
+    if (!event) return res.status(404).json({ error: "Event not found" });
     res.status(200).json(event);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch event" });
