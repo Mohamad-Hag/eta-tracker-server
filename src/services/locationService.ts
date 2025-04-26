@@ -36,7 +36,8 @@ export const updateLocation = async (
 
     // ✅ New status logic
     let status = "On Time";
-    if (eta.duration === 0) status = "Arrived";
+    if (eta.duration <= 60 || eta.distance <= 100)
+      status = "Arrived"; // 1 min or 100m
     else if (isLate) status = lateAmount > 15 ? "Too Late" : "Late";
     else if (isEarly) status = earlyAmount > 900 ? "Too Early" : "Early"; // 15 min
 

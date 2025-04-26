@@ -5,6 +5,7 @@
 // type CalculateETAReturnType = {
 //   duration: number;
 //   trafficDelay: number;
+//   distance: number;
 // } | null;
 
 // const etaCache = new Map<
@@ -60,6 +61,7 @@
 //     const result = {
 //       duration: routeSummary.duration,
 //       trafficDelay: routeSummary.trafficDelay || 0,
+//       distance: routeSummary.distance || 0,
 //     };
 
 //     etaCache.set(cacheKey, { data: result, timestamp: now });
@@ -75,6 +77,7 @@ import { AppLocation } from "./parseLocationString";
 type CalculateETAReturnType = {
   duration: number;
   trafficDelay: number;
+  distance: number;
 } | null;
 
 // Utility to simulate network delay
@@ -106,5 +109,6 @@ export const calculateETA = async (
   return {
     duration: Math.floor(baseDuration),
     trafficDelay,
+    distance,
   };
 };
