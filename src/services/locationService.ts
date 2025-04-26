@@ -1,5 +1,5 @@
 import TransportMode from "../types/TransportMode";
-import { calculateETA } from "../utils/calculateETA";
+import calculateETA from "../utils/calculateETA";
 import checkTimingStatus from "../utils/checkTimingStatus";
 import { parseLocationString } from "../utils/parseLocationString";
 import SocketManager from "../utils/SocketManager";
@@ -36,8 +36,7 @@ export const updateLocation = async (
 
     // ✅ New status logic
     let status = "On Time";
-    if (eta.duration <= 120)
-      status = "Arrived"; // 2 min or 100m
+    if (eta.duration <= 120) status = "Arrived"; // 2 min or 100m
     else if (isLate) status = lateAmount > 15 ? "Too Late" : "Late";
     else if (isEarly) status = earlyAmount > 900 ? "Too Early" : "Early"; // 15 min
 
